@@ -29,3 +29,4 @@ def create_pool(loop, **kw):
 @asyncio.coroutine
 def select(sql, args, size=None):
     log(sql, args)
+    global __pool
