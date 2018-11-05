@@ -54,3 +54,41 @@ def execute(sql, args):
         except BaseException as e:
             raise
         return affected
+
+
+class Field(object):
+
+    def __init__(self, name, column_type, primary_key, default):
+        self.name = name
+        self.column_type = column_type
+        self.primary_key = primary_key
+        self.default = default
+
+    def __str__(self):
+        return '<%s, %s:%s>' % (self.__class__.__name__, self.column_type, self.name)
+
+
+class ModelMetaclass(type):
+    def __new__(cls, name, bases, attrs):
+        # 排除Model类本身
+        if name == 'Modle':
+            return type.__new__(cls, name, bases, attrs)
+        # 获取table名称
+        tableName = attrs.get('__table__', None) or name
+        logging.info('found model:%s (table:%s)' % (name, tableName))
+        # 获取所有的Field和主键名:
+        mappings = dict()
+        fields = []
+        primaryKey = None
+        for k, v in attrs.items():
+            if isinstance(v, Field):
+                logging.info('found mapping : %s ==> %s' % (k, v))
+                mappings[k] = v
+                if v.primary_key:
+                    # 找到主键
+                    if primaryKey:
+                        raise RuntimeError('Duplicate primary key for field: %s' % k)
+                else:
+                    fields.append(k)
+
+    _
