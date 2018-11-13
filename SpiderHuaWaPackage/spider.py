@@ -5,6 +5,7 @@ from requests.exceptions import RequestException
 import re
 import time
 
+
 def get_one_page(url):
     response = requests.get(url)
     if response.status_code == 200:
@@ -13,23 +14,28 @@ def get_one_page(url):
 
 
 def main():
-    url = 'http://www.huawa.com/store/search'
+    url = 'http://www.huawa.com/store-2-36-0-0-0-0-0-0-2.html'
     html = get_one_page(url)
-    print(html)
+    print(parse_one_page(html))
+
 
 def parse_one_page(html):
     pattern = re.compile(
-        '<dd>.*?board-index.*?>(.*?)</i>.*?data-src="(.*?)".*?name.*?a.*?>(.*?)</a>.*?star.*?>(.*?)</p>.*?releasetime.*?>(.*?)</p>.*?integer.*?>(.*?)</i>.*?fraction.*?>(.*?)</i>.*?</dd>',
+        '<span class="diqu">\[(.*?)\].<b><a href="http://www.huawa.com/shop/(.*?)" target="_blank">(.*?)</a>'
+        '.*?600;">(.*?)</font>.*?花店地址：(.*?)</p>.*?xinyu.*?title="(.*?)"',
         re.S)
     items = re.findall(pattern, html)
+    print(items)
     for item in items:
-        yield {
-            'index': item[0],
-            'image': item[1],
-            'title': item[2].strip(),
-            'actor': item[3].strip()[3:] if len(item[3]) > 3 else '',
-            'time': item[4].strip()[5:] if len(item[4]) > 5 else '',
-            'score': item[5].strip() + item[6].strip()
-        }
+        print(item)
+        # yield {
+        #     'area': item[19:],
+        #     # 'image': item[1],
+        #     # 'title': item[2].strip(),
+        #     # 'actor': item[3].strip()[3:] if len(item[3]) > 3 else '',
+        #     # 'time': item[4].strip()[5:] if len(item[4]) > 5 else '',
+        #     # 'score': item[5].strip() + item[6].strip()
+        # }
+
 
 main()
