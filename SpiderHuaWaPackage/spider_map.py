@@ -10,23 +10,32 @@ from datetime import datetime
 import random
 import os
 
-# 代理池
-proxy_list = [
-    {"http": "114.82.109.134:8118"},
-    {"http": "124.88.67.81:80"},
-    {"http": "121.193.143.249:80"}
-]
+
+def get_ip_list():
+    url = 'http://www.xicidaili.com/nn/'
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36'}
+    response = urllib.request.Request(url=url, headers=headers)
+    html = urllib.request.urlopen(response).read().decode('utf-8')
+    regip = r'<td>(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})</td>\s*?<td>(\d*)</td>'
+    matcher = re.compile(regip)
+    ipstr = re.findall(matcher, html)
+    ip_list = []
+    for ipport in ipstr:
+        ip_list.append(ipport[0] + ':' + ipport[1])
+        print(ipport[0] + ':' + ipport[1])
+    return ip_list
 
 
 # 加载页面
-def load_page(url):
+def load_page(url, ip_list):
     user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36"
-    cookie = "guid=56db-07ca-4e87-f04a; UM_distinctid=16712ac667d18b-0c2f90b5be927-b79183d-100200-16712ac667fa8b; cna=I13fEQPsO0ICAd9XIcqaeqnA; _uab_collina=154220655304732961312653; key=bfe31f4e0fb231d29e1d3ce951e2c780; CNZZDATA1255626299=1772599595-1542204043-https%253A%252F%252Fwww.baidu.com%252F%7C1542290506; x5sec=7b22617365727665723b32223a2264333636356261356336316364376436373938363738633336346239353630374350437374743846454d47696876666939496a4442773d3d227d; isg=BA8PDxgFiOt7zYwWJRSsf1rWnqPZnGMzzISM2SEP2n448AXyegSOpiym9mBriD"
+    cookie = "UM_distinctid=16712ac667d18b-0c2f90b5be927-b79183d-100200-16712ac667fa8b; cna=I13fEQPsO0ICAd9XIcqaeqnA; _uab_collina=154220655304732961312653; key=bfe31f4e0fb231d29e1d3ce951e2c780; CNZZDATA1255626299=1772599595-1542204043-https%253A%252F%252Fwww.baidu.com%252F%7C1542556288; x5sec=7b22617365727665723b32223a226232313033383238333436636233356135616238313838373465666365396664434f435778743846454e484d3065726472724c773467453d227d; isg=BOfnwNVdcA-OEPSendzEd6IudhtxxLsrJEzUUblUD3adqAdqwT9Yn7_hzuiTQJPG"
+    headers = {"User_Agent": user_agent,"cookie":cookie, "Host": "www.amap.com",
+               "amapuuid": "234cfd23-466d-473a-8438-ea5a53333e6e"}
 
-    headers = {"User_Agent": user_agent, "Cookie": cookie, "amapuuid": "234cfd23-466d-473a-8438-ea5a53333e6e",
-               "Host": "www.amap.com", "Referer": "https://www.amap.com/"}
     # 随机使用一个代理
-    proxy_addr = random.choice(proxy_list)
+    proxy_addr = random.choice(ip_list)
     print("正在使用代理：%s" % proxy_addr)
     proxy = urllib.request.ProxyHandler({'http': proxy_addr})
     opener = urllib.request.build_opener(proxy, urllib.request.HTTPHandler)
@@ -38,21 +47,27 @@ def load_page(url):
 
 
 def main():
-    # areaStr = ""
-    # with open(r'C:\\Users\\pig\Desktop\area.json', 'r', encoding='UTF-8', errors='ignore') as f:
-    #     for line in f.readlines():
-    #         areaStr += line.strip()
-    # areaJson = json.loads(areaStr)
-    # for area in areaJson:
-    #     if area["ParentId"] == 510000:
-    #         print(area["AreaId"], area["Name"])
+    ip_list = get_ip_list()
+    areaStr = ""
+    with open(r'C:\\Users\\pig\Desktop\area.json', 'r', encoding='UTF-8', errors='ignore') as f:
+        for line in f.readlines():
+            areaStr += line.strip()
+    areaJson = json.loads(areaStr)
+    province = "湖南省"
+    for area in areaJson:
+        if area["ParentId"] == 430000:
+            print(province, area["AreaId"], area["Name"])
+            Load_Data(area["AreaId"], province, area["Name"], ip_list)
 
+
+def Load_Data(areaId, province, city, ip_list):
     temp = []
-    for i in range(1, 35):
-        print("正在收集第 " + str(i) + " 页数据")
+    for i in range(1, 40):
+        print("正在收集 %s %s 第 %s 页数据" % (province, city, str(i)))
         url = 'https://www.amap.com/service/poiInfo?query_type=TQUERY&pagesize=200&pagenum=' + str(
-            i) + '&qii=true&cluster_state=5&need_utd=true&utd_sceneid=1000&div=PC1000&addr_poi_merge=true&is_classify=true&zoom=12&geoobj=104.022648%7C30.548945%7C104.218685%7C30.775752&city=510300&keywords=%E8%8A%B1%E5%BA%97'
-        html = str(load_page(url), encoding="utf8")
+            i) + '&qii=true&cluster_state=5&need_utd=true&utd_sceneid=1000&div=PC1000&addr_poi_merge=true&is_classify=true&zoom=12&geoobj=104.022648%7C30.548945%7C104.218685%7C30.775752&city=' + str(
+            areaId) + '&keywords=%E8%8A%B1%E5%BA%97'
+        html = str(load_page(url, ip_list), encoding="utf8")
         print(html)
         # 转json
         jsonData = json.loads(html)
@@ -63,10 +78,9 @@ def main():
                 temp.append(elem)
         else:
             break
-        time.sleep(2)
+        time.sleep(10)
 
-    write_list_to_excel(temp)
-    # print(parse_one_page(html))
+    write_list_to_excel(temp, province, city)
 
 
 # 打印到excel
@@ -108,7 +122,8 @@ def write_list_to_excel(list, province, city):
                 sheet.write(i + 1, 7, list[i]["disp_name"])
 
     # 以传递的name+当前日期作为excel名称保存。
-    wbk.save("自贡" + str(today_date) + '.xls')
+    excelPath = os.path.join(os.path.abspath("."), province, (city + str(today_date) + '.xls'))
+    wbk.save(excelPath)
 
 
 def load_area():
