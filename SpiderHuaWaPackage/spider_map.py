@@ -30,8 +30,8 @@ def get_ip_list():
 # 加载页面
 def load_page(url, ip_list):
     user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36"
-    cookie = "UM_distinctid=16712ac667d18b-0c2f90b5be927-b79183d-100200-16712ac667fa8b; cna=I13fEQPsO0ICAd9XIcqaeqnA; _uab_collina=154220655304732961312653; key=bfe31f4e0fb231d29e1d3ce951e2c780; CNZZDATA1255626299=1772599595-1542204043-https%253A%252F%252Fwww.baidu.com%252F%7C1542556288; x5sec=7b22617365727665723b32223a226232313033383238333436636233356135616238313838373465666365396664434f435778743846454e484d3065726472724c773467453d227d; isg=BOfnwNVdcA-OEPSendzEd6IudhtxxLsrJEzUUblUD3adqAdqwT9Yn7_hzuiTQJPG"
-    headers = {"User_Agent": user_agent,"cookie":cookie, "Host": "www.amap.com",
+    cookie = "UM_distinctid=16712ac667d18b-0c2f90b5be927-b79183d-100200-16712ac667fa8b; cna=I13fEQPsO0ICAd9XIcqaeqnA; _uab_collina=154220655304732961312653; key=bfe31f4e0fb231d29e1d3ce951e2c780; CNZZDATA1255626299=1772599595-1542204043-https%253A%252F%252Fwww.baidu.com%252F%7C1542686644; x5sec=7b22617365727665723b32223a226232663961656132376165366665393530333434343139393233393562613636434d61757a74384645507948324b6676727543563267453d227d;"
+    headers = {"User_Agent": user_agent, "cookie": cookie, "Host": "www.amap.com",
                "amapuuid": "234cfd23-466d-473a-8438-ea5a53333e6e"}
 
     # 随机使用一个代理
@@ -53,11 +53,25 @@ def main():
         for line in f.readlines():
             areaStr += line.strip()
     areaJson = json.loads(areaStr)
-    province = "湖南省"
+    provinceList = []
     for area in areaJson:
-        if area["ParentId"] == 430000:
-            print(province, area["AreaId"], area["Name"])
-            Load_Data(area["AreaId"], province, area["Name"], ip_list)
+        if area["ParentId"] == 0 and area["AreaId"] != 110000 and area["AreaId"] != 310000 and area[
+            "AreaId"] != 120000 and area["AreaId"] != 500000:
+            provinceList.append(area)
+
+    for province in provinceList:
+        for city in areaJson:
+            if (city["ParentId"] == province["AreaId"]):
+                provinceName = province["Name"]
+                cityName = city["Name"]
+                areaId = city["AreaId"]
+                filePath = os.path.join(os.path.abspath("."), provinceName, (cityName + '.xls'))
+                # 判断文件是否存在
+                if os.path.exists(filePath) == False:
+                    Load_Data(areaId, provinceName, cityName, ip_list)
+
+        # print(area["Name"], area["AreaId"], area["Name"])
+        # Load_Data(area["AreaId"], province, area["Name"], ip_list)
 
 
 def Load_Data(areaId, province, city, ip_list):
@@ -122,7 +136,7 @@ def write_list_to_excel(list, province, city):
                 sheet.write(i + 1, 7, list[i]["disp_name"])
 
     # 以传递的name+当前日期作为excel名称保存。
-    excelPath = os.path.join(os.path.abspath("."), province, (city + str(today_date) + '.xls'))
+    excelPath = os.path.join(os.path.abspath("."), province, (city + '.xls'))
     wbk.save(excelPath)
 
 
