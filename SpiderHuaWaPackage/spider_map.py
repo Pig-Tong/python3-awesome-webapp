@@ -1,7 +1,5 @@
 # _*_ coding:utf-8 _*_
 import json
-import requests
-from requests.exceptions import RequestException
 import re
 import time
 import urllib.request
@@ -30,7 +28,7 @@ def get_ip_list():
 # 加载页面
 def load_page(url, ip_list):
     user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36"
-    cookie = "UM_distinctid=16711c5ccb7d60-02412942692cbd-b79193d-1fa400-16711c5ccb8918; cna=sMDqExMDnCcCAW6480fQ+W4J; _uab_collina=154219143645961913353431; key=bfe31f4e0fb231d29e1d3ce951e2c780; CNZZDATA1255626299=2035170135-1542186042-https%253A%252F%252Fwww.baidu.com%252F%7C1542733099; x5sec=7b22617365727665723b32223a22356434646235393135616235636131313231303033653836633862316530313043504f4330643846454b506e3163366d333972573677453d227d; isg=BLu7SnbaZDb46FidZOOYSTQGSp8vFcbphl-ecq14l7rRDNvuNeBfYtlKIuznLCcK"
+    cookie = "UM_distinctid=16711c5ccb7d60-02412942692cbd-b79193d-1fa400-16711c5ccb8918; cna=sMDqExMDnCcCAW6480fQ+W4J; _uab_collina=154219143645961913353431; key=bfe31f4e0fb231d29e1d3ce951e2c780; CNZZDATA1255626299=2035170135-1542186042-https%253A%252F%252Fwww.baidu.com%252F%7C1542857417; x5sec=7b22617365727665723b32223a223463323464316139343631393862393066393361383931663362656233323539434b724a324e3846454c6d7879666569316148393677453d227d;"
     headers = {"User_Agent": user_agent, "cookie": cookie, "Host": "www.amap.com",
                "amapuuid": "234cfd23-466d-473a-8438-ea5a53333e6e"}
 
@@ -48,59 +46,71 @@ def load_page(url, ip_list):
 
 def main():
     ip_list = get_ip_list()
-    areaStr = ""
-    with open(r'C:\\Users\\pig\Desktop\area.json', 'r', encoding='UTF-8', errors='ignore') as f:
+    area_str = ""
+    with open(r'C:\Users\zhut\Desktop\area.json', 'r', encoding='UTF-8', errors='ignore') as f:
         for line in f.readlines():
-            areaStr += line.strip()
-    areaJson = json.loads(areaStr)
-    provinceList = []
-    for area in areaJson:
-        if area["ParentId"] == 0 and area["AreaId"] != 110000 and area["AreaId"] != 310000 and area[
-            "AreaId"] != 120000 and area["AreaId"] != 500000:
-            provinceList.append(area)
+            area_str += line.strip()
+    area_json = json.loads(area_str)
 
-    # for province in provinceList:
-    #     for city in areaJson:
-    #         if (city["ParentId"] == province["AreaId"]):
-    #             provinceName = province["Name"]
-    #             cityName = city["Name"]
-    #             areaId = city["AreaId"]
-    #             filePath = os.path.join(os.path.abspath("."), provinceName, (cityName + '.xls'))
-    #             # 判断文件是否存在
-    #             if os.path.exists(filePath) == False:
-    #                 Load_Data(areaId, provinceName, cityName, ip_list)
-    Load_Data(110000, "北京市", "北京市", ip_list)
-        # print(area["Name"], area["AreaId"], area["Name"])
-        # Load_Data(area["AreaId"], province, area["Name"], ip_list)
+    # 省会
+    for province in [x for x in area_json if x["ParentId"] == 0]:
+        province_id = province["AreaId"]
+        province_name = province["Name"]
+        # 循环城市
+        for city in [x for x in area_json if x["ParentId"] == province_id]:
+            city_name = city["Name"]
+            city_id = city["AreaId"]
+            county_list = [x for x in area_json if x["ParentId"] == city_id]
+            if county_list:
+                for county in county_list:
+                    county_name = county["Name"]
+                    county_id = county["AreaId"]
+                    file_path = os.path.join(os.path.abspath("."), province_name, city_name,
+                                             (province_name + city_name + county_name + '.xls'))
+                    # 判断文件是否存在
+                    if not os.path.exists(file_path):
+                        load_data(county_id, province_name, city_name, county_name, ip_list)
+
+            else:
+                file_path = os.path.join(os.path.abspath("."), province_name, city_name,
+                                         (province_name + city_name + '.xls'))
+                # 判断文件是否存在
+                if not os.path.exists(file_path):
+                    load_data(city_id, province_name, city_name, "", ip_list)
+
+    # load_data(510100, "成都", "成都", ip_list)
+    # print(area["Name"], area["AreaId"], area["Name"])
+    # load_data(area["AreaId"], province, area["Name"], ip_list)
 
 
-def Load_Data(areaId, province, city, ip_list):
+def load_data(area_id, province, city, county, ip_list):
     temp = []
     for i in range(1, 100):
-        print("正在收集 %s %s 第 %s 页数据" % (province, city, str(i)))
+        print("正在收集 %s %s 第 %s 页数据" % (province, city, county, str(i)))
         url = 'https://www.amap.com/service/poiInfo?query_type=TQUERY&pagesize=200&pagenum=' + str(
-            i) + '&qii=true&cluster_state=5&need_utd=true&utd_sceneid=1000&div=PC1000&addr_poi_merge=true&is_classify=true&zoom=12&geoobj=104.022648%7C30.548945%7C104.218685%7C30.775752&city=' + str(
-            areaId) + '&keywords=%E8%8A%B1%E5%BA%97'
+            i) + '&qii=true&cluster_state=5&need_utd=true&utd_sceneid=1000&div=PC1000&addr_poi_merge=true&is_classify=true&zoom=12&city=' + str(
+            area_id) + '&keywords=%E8%8A%B1%E5%BA%97'
         html = str(load_page(url, ip_list), encoding="utf8")
         print(html)
         # 转json
-        jsonData = json.loads(html)
+        json_data = json.loads(html)
         # list
-        if "poi_list" in jsonData["data"].keys():
-            list = jsonData["data"]["poi_list"]
+        if "poi_list" in json_data["data"].keys():
+            list = json_data["data"]["poi_list"]
             for elem in list:
                 temp.append(elem)
         else:
             break
         time.sleep(2)
 
-    write_list_to_excel(temp, province, city)
+    write_list_to_excel(temp, province, city, county)
 
 
 # 打印到excel
-def write_list_to_excel(list, province, city):
-    if os.path.exists(province) == False:
-        os.mkdir(province)
+def write_list_to_excel(data_list, province, city, county):
+    save_file = os.path.join(os.path.abspath("."), province, city)
+    if not os.path.exists(save_file):
+        os.mkdir(save_file)
 
     # 将sql作为参数传递调用get_data并将结果赋值给result,(result为一个嵌套元组)
     # 实例化一个Workbook()对象(即excel文件)
@@ -110,7 +120,7 @@ def write_list_to_excel(list, province, city):
     # 获取当前日期，得到一个datetime对象如：(2016, 8, 9, 23, 12, 23, 424000)
     today = datetime.today()
     # 将获取到的datetime对象仅取日期如：2016-8-9
-    today_date = datetime.date(today)
+    # today_date = datetime.date(today)
     sheet.write(0, 0, "id")
     sheet.write(0, 1, "所在城市")
     sheet.write(0, 2, "花店名称")
@@ -121,34 +131,24 @@ def write_list_to_excel(list, province, city):
     sheet.write(0, 7, "花店名称")
 
     # 遍历result中的没个元素。
-    for i in range(len(list)):
+    for i in range(len(data_list)):
         # 对result的每个子元素作遍历，
         for j in range(len(list[i])):
             # 将每一行的每个元素按行号i,列号j,写入到excel中。
-            sheet.write(i + 1, 0, list[i]["id"])
-            sheet.write(i + 1, 1, list[i]["cityname"])
-            sheet.write(i + 1, 2, list[i]["name"])
-            sheet.write(i + 1, 3, list[i]["tel"])
-            sheet.write(i + 1, 4, list[i]["address"])
-            sheet.write(i + 1, 5, list[i]["longitude"])
-            sheet.write(i + 1, 6, list[i]["latitude"])
-            if "disp_name" in list[i].keys():
-                sheet.write(i + 1, 7, list[i]["disp_name"])
+            sheet.write(i + 1, 0, data_list[i]["id"])
+            sheet.write(i + 1, 1, data_list[i]["cityname"])
+            sheet.write(i + 1, 2, data_list[i]["name"])
+            sheet.write(i + 1, 3, data_list[i]["tel"])
+            sheet.write(i + 1, 4, data_list[i]["address"])
+            sheet.write(i + 1, 5, data_list[i]["longitude"])
+            sheet.write(i + 1, 6, data_list[i]["latitude"])
+            if "disp_name" in data_list[i].keys():
+                sheet.write(i + 1, 7, data_list[i]["disp_name"])
 
     # 以传递的name+当前日期作为excel名称保存。
-    excelPath = os.path.join(os.path.abspath("."), province, (city + '.xls'))
-    wbk.save(excelPath)
-
-
-def load_area():
-    areaStr = ""
-    with open(r'C:\\Users\\pig\Desktop\area.json', 'r', encoding='UTF-8', errors='ignore') as f:
-        for line in f.readlines():
-            areaStr += line.strip()
-    areaJson = json.loads(areaStr)
-    for area in areaJson:
-        if area["ParentId"] == 510000:
-            print(area["AreaId"], area["Name"])
+    excel_path = os.path.join(os.path.abspath("."), province, city,
+                             (province + city + county + '.xls'))
+    wbk.save(excel_path)
 
 
 main()

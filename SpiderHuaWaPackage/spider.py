@@ -5,6 +5,7 @@ from requests.exceptions import RequestException
 import re
 import time
 
+
 def get_one_page(url):
     response = requests.get(url)
     if response.status_code == 200:
