@@ -15,7 +15,7 @@ def get_one_page(url):
 
 def main():
 
-    url = 'http://www.huawa.com/store-2-36-0-0-0-0-0-0-2.html'
+    url = 'http://www.huawa.com/store-24-382-2465-0-0-0-0-0-2.html'
     html = get_one_page(url)
     print(parse_one_page(html))
 
