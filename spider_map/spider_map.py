@@ -146,7 +146,7 @@ def write_list_to_excel(data_list, province, city, county):
     # 新建一个名为Sheet1的excel sheet。此处的cell_overwrite_ok =True是为了能对同一个单元格重复操作。
     sheet = wbk.add_sheet('Sheet1', cell_overwrite_ok=True)
     # 获取当前日期，得到一个datetime对象如：(2016, 8, 9, 23, 12, 23, 424000)
-    today = datetime.today()
+    #today = datetime.today()
     # 将获取到的datetime对象仅取日期如：2016-8-9
     # today_date = datetime.date(today)
     sheet.write(0, 0, "id")

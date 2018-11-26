@@ -4,6 +4,7 @@ import requests
 from requests.exceptions import RequestException
 import re
 import time
+from spider_huawa.huawa_area import get_huawa_area
 
 
 def get_one_page(url):
@@ -14,10 +15,14 @@ def get_one_page(url):
 
 
 def main():
+    area_list = get_huawa_area()
+    print(area_list[0])
+    for area in area_list[0]:
+        print(area)
 
-    url = 'http://www.huawa.com/store-24-382-2465-0-0-0-0-0-2.html'
-    html = get_one_page(url)
-    print(parse_one_page(html))
+    # url = 'http://www.huawa.com/store-24-382-2465-0-0-0-0-0-2.html'
+    # html = get_one_page(url)
+    # print(parse_one_page(html))
 
 
 def parse_one_page(html):
