@@ -1,0 +1,2 @@
+
+from huawa_spider.huawa_area import get_huawa_area
