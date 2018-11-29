@@ -20,7 +20,7 @@ def get_ip_list():
     #                       r' Chrome/70.0.3538.67 Safari/537.36'}
     #     response = urllib.request.Request(url=url, headers=headers)
     #     html = urllib.request.urlopen(response).read().decode('utf-8')
-    #     ip_reg = r'<td>(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})</td>\s*?<td>(\d*)</td>'
+    #     ip_reg = r'<td>(                \d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})</td>\s*?<td>(\d*)</td>'
     #     matcher = re.compile(ip_reg)
     #     ip_str = re.findall(matcher, html)
     #
@@ -50,9 +50,9 @@ def load_page(url):
     proxy_addr = random.choice(ip_list)
     print("正在使用代理：%s" % proxy_addr)
     print(url)
-    proxy = urllib.request.ProxyHandler({'http': proxy_addr})
-    opener = urllib.request.build_opener(proxy, urllib.request.HTTPHandler)
-    urllib.request.install_opener(opener)
+    # proxy = urllib.request.ProxyHandler({'http': proxy_addr})
+    # opener = urllib.request.build_opener(proxy, urllib.request.HTTPHandler)
+    # urllib.request.install_opener(opener)
     req = urllib.request.Request(url, headers=headers)
     res = urllib.request.urlopen(req)
     rsp_headers = res.info()
@@ -65,7 +65,7 @@ def load_page(url):
         ret = gzip.decompress(html).decode("utf-8")
     else:
         ret = str(html, encoding="utf-8")
-
+    print(ret)
     return ret
 
 
@@ -76,7 +76,7 @@ def load_data(province_id, province_name, city_id, city_name, county_id, county_
         print("正在收集 %s%s%s 第 %s 页数据" % (province_name, city_name, county_name, str(i)))
         url = 'http://www.huawa.com/store-' + str(province_id) + '-' + str(city_id) + '-' + \
               str(county_id) + '-0-0-0-0-0-' + str(i) + '.html'
-        html = load_page(url);
+        html = load_page(url)
         print(html)
         # 解析数据
         page_list = parse_one_page(html)

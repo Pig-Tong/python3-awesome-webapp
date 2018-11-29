@@ -27,7 +27,7 @@ def get_ip_list():
     #     for ip_port in ip_str:
     #         ip_list.append(ip_port[0] + ':' + ip_port[1])
     #         print(ip_port[0] + ':' + ip_port[1])
-    with open(r'C:\Users\zhut\Desktop\ip_list.txt', 'r', encoding='UTF-8', errors='ignore') as f:
+    with open(os.path.join(os.path.abspath("."), "config", "ip_list.txt"), 'r', encoding='UTF-8', errors='ignore') as f:
         for line in f.readlines():
             ip_list.append(line.strip())
     return ip_list
@@ -36,7 +36,7 @@ def get_ip_list():
 def main():
     ip_list = get_ip_list()
     area_str = ""
-    with open(r'C:\Users\zhut\Desktop\area.json', 'r', encoding='UTF-8', errors='ignore') as f:
+    with open(os.path.join(os.path.abspath("."), "config", "area.json"), 'r', encoding='UTF-8', errors='ignore') as f:
         for line in f.readlines():
             area_str += line.strip()
     area_json = json.loads(area_str)
@@ -172,8 +172,8 @@ def write_list_to_excel(data_list, province, city, county):
 
     excel_path = os.path.join(os.path.abspath("."), province, city, (province + city + county + '.xls'))
     wbk.save(excel_path)
-    with open('C:\\Users\\zhut\Desktop\新建文本文档.txt', 'a', encoding='UTF-8', errors='ignore') as f:
-        f.writelines(str(len(data_list)) + "\n")
+    # with open('C:\\Users\\zhut\Desktop\新建文本文档.txt', 'a', encoding='UTF-8', errors='ignore') as f:
+    #     f.writelines(str(len(data_list)) + "\n")
 
 
 main()
