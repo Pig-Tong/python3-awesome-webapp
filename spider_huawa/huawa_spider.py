@@ -7,8 +7,30 @@ import urllib.request
 import xlwt
 import os
 import gzip
+import requests
+import time
 
 ip_list = []
+
+ua_list = ["Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/22.0.1207.1 Safari/537.1",
+           "Mozilla/5.0 (X11; CrOS i686 2268.111.0) AppleWebKit/536.11 (KHTML, like Gecko) Chrome/20.0.1132.57 Safari/536.11",
+           "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/536.6 (KHTML, like Gecko) Chrome/20.0.1092.0 Safari/536.6",
+           "Mozilla/5.0 (Windows NT 6.2) AppleWebKit/536.6 (KHTML, like Gecko) Chrome/20.0.1090.0 Safari/536.6",
+           "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/19.77.34.5 Safari/537.1",
+           "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/536.5 (KHTML, like Gecko) Chrome/19.0.1084.9 Safari/536.5",
+           "Mozilla/5.0 (Windows NT 6.0) AppleWebKit/536.5 (KHTML, like Gecko) Chrome/19.0.1084.36 Safari/536.5",
+           "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/536.3 (KHTML, like Gecko) Chrome/19.0.1063.0 Safari/536.3",
+           "Mozilla/5.0 (Windows NT 5.1) AppleWebKit/536.3 (KHTML, like Gecko) Chrome/19.0.1063.0 Safari/536.3",
+           "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_0) AppleWebKit/536.3 (KHTML, like Gecko) Chrome/19.0.1063.0 Safari/536.3",
+           "Mozilla/5.0 (Windows NT 6.2) AppleWebKit/536.3 (KHTML, like Gecko) Chrome/19.0.1062.0 Safari/536.3",
+           "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/536.3 (KHTML, like Gecko) Chrome/19.0.1062.0 Safari/536.3",
+           "Mozilla/5.0 (Windows NT 6.2) AppleWebKit/536.3 (KHTML, like Gecko) Chrome/19.0.1061.1 Safari/536.3",
+           "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/536.3 (KHTML, like Gecko) Chrome/19.0.1061.1 Safari/536.3",
+           "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/536.3 (KHTML, like Gecko) Chrome/19.0.1061.1 Safari/536.3",
+           "Mozilla/5.0 (Windows NT 6.2) AppleWebKit/536.3 (KHTML, like Gecko) Chrome/19.0.1061.0 Safari/536.3",
+           "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.24 (KHTML, like Gecko) Chrome/19.0.1055.1 Safari/535.24",
+           "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/535.24 (KHTML, like Gecko) Chrome/19.0.1055.1 Safari/535.24"
+           ]
 
 
 # 加载代理ip
@@ -35,7 +57,8 @@ def get_ip_list():
 
 # 加载页面
 def load_page(url):
-    user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.77 Safari/537.36"
+    print(url)
+    user_agent = random.choice(ua_list)
     cookie = "_qddaz=QD.qe65no.gjqtrf.jocwoiln; __cfduid=d6b14c69a3ef3670e10335ae439fdaa521541942382; " \
              "tencentSig=3793054720; 4047_seccode52f9dc26=055GxTiIdf44GhmdjxCHJo7qafosSfKI2pNd4Vpu4oNj85Jx19g; " \
              "PHPSESSID=mkcc4lbav519pdiqfbikuj4rm3; 53kf_1827303_keyword=; " \
@@ -44,46 +67,58 @@ def load_page(url):
              "qddamta_4006780020=3-0"
 
     headers = {"User_Agent": user_agent, "Cookie": cookie, "Host": "www.huawa.com", 'Accept': '*/*',
-               'Accept-Encoding': 'gzip, deflate'}
+               'Accept-Encoding': 'gzip, deflate', "Referer": url, "Accept-Language": "zh-CN,zh;q=0.9",
+               "Connection": "close"}
 
     # 随机使用一个代理
     proxy_addr = random.choice(ip_list)
     print("正在使用代理：%s" % proxy_addr)
-    print(url)
     # proxy = urllib.request.ProxyHandler({'http': proxy_addr})
     # opener = urllib.request.build_opener(proxy, urllib.request.HTTPHandler)
     # urllib.request.install_opener(opener)
-    req = urllib.request.Request(url, headers=headers)
-    res = urllib.request.urlopen(req)
-    rsp_headers = res.info()
-    html = res.read()
-    ret = ""
-    print(html)
-    if ('Content-Encoding' in rsp_headers and rsp_headers['Content-Encoding'] == 'gzip') or (
-            'content-encoding' in rsp_headers and rsp_headers['content-encoding'] == 'gzip'):
-        print("is gzip")
-        ret = gzip.decompress(html).decode("utf-8")
-    else:
-        ret = str(html, encoding="utf-8")
-    print(ret)
-    return ret
+    # req = urllib.request.Request(url, headers=headers)
+    # res = urllib.request.urlopen(req)
+    # rsp_headers = res.info()
+    # html = res.read()
+    # ret = ""
+    # print(html)
+    # if ('Content-Encoding' in rsp_headers and rsp_headers['Content-Encoding'] == 'gzip') or (
+    #         'content-encoding' in rsp_headers and rsp_headers['content-encoding'] == 'gzip'):
+    #     print("is gzip")
+    #     ret = gzip.decompress(html).decode("utf-8")
+    # else:
+    #     ret = str(html, encoding="utf-8")
+    # print(ret)
+    # return ret
+    proxies = {
+        'http': 'http://' + proxy_addr,
+        'https': 'https://' + proxy_addr,
+    }
+
+    response = requests.get(url, headers=headers, proxies=proxies)  # 使用requests进行请求时，直接调用requests.get()即可
+    return response.text
 
 
 # 加载数据
 def load_data(province_id, province_name, city_id, city_name, county_id, county_name):
+    if os.path.exists(os.path.join(os.path.abspath("."), province_name, city_name,
+                                   (province_name + city_name + county_name + '.xls'))):
+        return None
+
     data_list = []
     for i in range(1, 200):
         print("正在收集 %s%s%s 第 %s 页数据" % (province_name, city_name, county_name, str(i)))
         url = 'http://www.huawa.com/store-' + str(province_id) + '-' + str(city_id) + '-' + \
               str(county_id) + '-0-0-0-0-0-' + str(i) + '.html'
+
         html = load_page(url)
-        print(html)
         # 解析数据
         page_list = parse_one_page(html)
-        if len(page_list):
-            data_list.extend(page_list)
-        else:
+        data_list.extend(page_list)
+        if len(page_list) < 8:
             break
+
+        time.sleep(2)
     write_list_to_excel(data_list, province_name, city_name, county_name)
 
 
@@ -117,7 +152,10 @@ def get_point_by_id(store_id):
     html = load_page(url)
     pattern = re.compile('"y_axis":"(.*?)","x_axis":"(.*?)"', re.S)
     items = re.findall(pattern, html)
-    return str(items[0][1]) + ',' + str(items[0][0])
+    if len(items):
+        return str(items[0][1]) + ',' + str(items[0][0])
+    else:
+        return ""
 
 
 # 打印到excel
