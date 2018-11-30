@@ -14,7 +14,7 @@ def url_to_img(url):
 
 # 图片识别
 def img_to_string(url):
-    pytesseract.pytesseract.tesseract_cmd = 'E://Program Files (x86)/Tesseract-OCR/tesseract.exe'
+    pytesseract.pytesseract.tesseract_cmd = 'F://Program Files (x86)/Tesseract-OCR/tesseract.exe'
     text = pytesseract.image_to_string(url_to_img(url))
     print("图片识别：%s" % text)
     return text

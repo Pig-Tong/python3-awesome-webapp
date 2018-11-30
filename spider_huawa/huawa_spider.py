@@ -59,16 +59,10 @@ def get_ip_list():
 def load_page(url):
     print(url)
     user_agent = random.choice(ua_list)
-    cookie = "_qddaz=QD.qe65no.gjqtrf.jocwoiln; __cfduid=d6b14c69a3ef3670e10335ae439fdaa521541942382; " \
-             "tencentSig=3793054720; 4047_seccode52f9dc26=055GxTiIdf44GhmdjxCHJo7qafosSfKI2pNd4Vpu4oNj85Jx19g; " \
-             "PHPSESSID=mkcc4lbav519pdiqfbikuj4rm3; 53kf_1827303_keyword=; " \
-             "Hm_lvt_4175f2a72ac6f0c111ec482d34734339=1543075412,1543075826,1543332343,1543416221; " \
-             "Hm_lpvt_4175f2a72ac6f0c111ec482d34734339=1543416221; _qdda=3-1.1; _qddab=3-pedj3t.jp1a62t4; _" \
-             "qddamta_4006780020=3-0"
-
-    headers = {"User_Agent": user_agent, "Cookie": cookie, "Host": "www.huawa.com", 'Accept': '*/*',
-               'Accept-Encoding': 'gzip, deflate', "Referer": url, "Accept-Language": "zh-CN,zh;q=0.9",
-               "Connection": "close"}
+    cookie = "_qddaz=QD.qe65no.gjqtrf.jocwoiln; __cfduid=d6b14c69a3ef3670e10335ae439fdaa521541942382; tencentSig=3793054720; 4047_seccode52f9dc26=055GxTiIdf44GhmdjxCHJo7qafosSfKI2pNd4Vpu4oNj85Jx19g; _qdda=3-1.1; _qddamta_4006780020=3-0; 53kf_1827303_keyword=; PHPSESSID=bb8br5gef4ohelodo7msjkqi07; Hm_lvt_4175f2a72ac6f0c111ec482d34734339=1543421255,1543455179,1543499780,1543500345; Hm_lpvt_4175f2a72ac6f0c111ec482d34734339=1543500345; _qddab=3-hg2kfk.jp2o96dj"
+    headers = {'Accept': '*/*', 'Accept-Encoding': 'gzip, deflate', "Accept-Language": "zh-CN,zh;q=0.9",
+               "Connection": "keep-alive", "Cookie": cookie, "Host": "www.huawa.com", "Referer": url,
+               "User_Agent": user_agent, "x-requested-with": "XMLHttpRequest"}
 
     # 随机使用一个代理
     proxy_addr = random.choice(ip_list)
@@ -76,27 +70,25 @@ def load_page(url):
     # proxy = urllib.request.ProxyHandler({'http': proxy_addr})
     # opener = urllib.request.build_opener(proxy, urllib.request.HTTPHandler)
     # urllib.request.install_opener(opener)
-    # req = urllib.request.Request(url, headers=headers)
-    # res = urllib.request.urlopen(req)
-    # rsp_headers = res.info()
-    # html = res.read()
-    # ret = ""
-    # print(html)
-    # if ('Content-Encoding' in rsp_headers and rsp_headers['Content-Encoding'] == 'gzip') or (
-    #         'content-encoding' in rsp_headers and rsp_headers['content-encoding'] == 'gzip'):
-    #     print("is gzip")
-    #     ret = gzip.decompress(html).decode("utf-8")
-    # else:
-    #     ret = str(html, encoding="utf-8")
-    # print(ret)
-    # return ret
-    proxies = {
-        'http': 'http://' + proxy_addr,
-        'https': 'https://' + proxy_addr,
-    }
-
-    response = requests.get(url, headers=headers, proxies=proxies)  # 使用requests进行请求时，直接调用requests.get()即可
-    return response.text
+    req = urllib.request.Request(url, headers=headers)
+    res = urllib.request.urlopen(req)
+    rsp_headers = res.info()
+    html = res.read()
+    ret = ""
+    if ('Content-Encoding' in rsp_headers and rsp_headers['Content-Encoding'] == 'gzip') or (
+            'content-encoding' in rsp_headers and rsp_headers['content-encoding'] == 'gzip'):
+        print("is gzip")
+        ret = gzip.decompress(html).decode("utf-8")
+    else:
+        ret = str(html, encoding="utf-8")
+    return ret
+    # proxies = {
+    #     'http': 'http://' + proxy_addr,
+    #     'https': 'https://' + proxy_addr,
+    # }
+    #
+    # response = requests.get(url, headers=headers, verify=False)  # 使用requests进行请求时，直接调用requests.get()即可
+    # return response.text
 
 
 # 加载数据
@@ -117,19 +109,21 @@ def load_data(province_id, province_name, city_id, city_name, county_id, county_
         data_list.extend(page_list)
         if len(page_list) < 8:
             break
-
         time.sleep(2)
-    write_list_to_excel(data_list, province_name, city_name, county_name)
+    if len(page_list) > 0:
+        write_list_to_excel(data_list, province_name, city_name, county_name)
 
 
 # 解析一个页面
 def parse_one_page(html):
+    print(html)
     result_list = []
     pattern = re.compile(
         '<span class="diqu">\[(.*?)\].<b><a href="http://www.huawa.com/shop/(.*?)" target="_blank">(.*?)</a>'
         '.*?600;">(.*?)</font>.*?花店电话:<img src="(.*?)".*?花店地址：(.*?)</p>.*?xinyu.*?title="(.*?)"',
         re.S)
     items = re.findall(pattern, html)
+    print(items)
     for item in items:
         result = {
             "id": item[1],
