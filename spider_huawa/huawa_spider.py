@@ -65,8 +65,8 @@ def load_page(url):
                "User_Agent": user_agent, "x-requested-with": "XMLHttpRequest"}
 
     # 随机使用一个代理
-    proxy_addr = random.choice(ip_list)
-    print("正在使用代理：%s" % proxy_addr)
+    # proxy_addr = random.choice(ip_list)
+    # print("正在使用代理：%s" % proxy_addr)
     # proxy = urllib.request.ProxyHandler({'http': proxy_addr})
     # opener = urllib.request.build_opener(proxy, urllib.request.HTTPHandler)
     # urllib.request.install_opener(opener)
@@ -77,7 +77,6 @@ def load_page(url):
     ret = ""
     if ('Content-Encoding' in rsp_headers and rsp_headers['Content-Encoding'] == 'gzip') or (
             'content-encoding' in rsp_headers and rsp_headers['content-encoding'] == 'gzip'):
-        print("is gzip")
         ret = gzip.decompress(html).decode("utf-8")
     else:
         ret = str(html, encoding="utf-8")
@@ -116,24 +115,30 @@ def load_data(province_id, province_name, city_id, city_name, county_id, county_
 
 # 解析一个页面
 def parse_one_page(html):
-    print(html)
     result_list = []
     pattern = re.compile(
-        '<span class="diqu">\[(.*?)\].<b><a href="http://www.huawa.com/shop/(.*?)" target="_blank">(.*?)</a>'
-        '.*?600;">(.*?)</font>.*?花店电话:<img src="(.*?)".*?花店地址：(.*?)</p>.*?xinyu.*?title="(.*?)"',
+        '<li>.*?<div class="store_name">.*?<span class="diqu">\[(.*?)\] <b>'
+        '<a href="http://www.huawa.com/shop/(.*?)" target="_blank">(.*?)</a>'
+        '.*?600;">(.*?)</font>.*?花店地址：(.*?)</p>.*?</li>',
         re.S)
     items = re.findall(pattern, html)
     print(items)
     for item in items:
+        store_detail = get_detail_by_id(item[1])
+        tel_url = ""
+        location = ""
+        if len(store_detail):
+            tel_url = str(store_detail[0]).replace("\\", "")
+            location = str(store_detail[2]) + "," + str(store_detail[1])
         result = {
             "id": item[1],
             "area": item[0],
             "name": item[2],
-            "address": item[5],
-            "tel": img_to_string(item[4]),
+            "address": item[4],
+            "tel": img_to_string(tel_url),
             "status": item[3],
-            "other": item[6],
-            "location": get_point_by_id(item[1])
+            "other": tel_url,
+            "location": location
         }
         print(result)
         result_list.append(result)
@@ -141,15 +146,15 @@ def parse_one_page(html):
 
 
 # 根据id，获取坐标
-def get_point_by_id(store_id):
+def get_detail_by_id(store_id):
     url = 'http://www.huawa.com/index.php?c=store_list&a=map&store_id=' + str(store_id)
     html = load_page(url)
-    pattern = re.compile('"y_axis":"(.*?)","x_axis":"(.*?)"', re.S)
+    pattern = re.compile(r'"store_mobile":"<img src=\\"(.*?)".*?"y_axis":"(.*?)","x_axis":"(.*?)"', re.S)
     items = re.findall(pattern, html)
     if len(items):
-        return str(items[0][1]) + ',' + str(items[0][0])
+        return items[0]
     else:
-        return ""
+        return ()
 
 
 # 打印到excel
@@ -203,6 +208,7 @@ def write_list_to_excel(data_list, province, city, county):
 if __name__ == "__main__":
     get_ip_list()
     area_list = get_huawa_area()
+    # load_data(2, "12", 36, "123", 0, "")
     for province in area_list[0]:
         province_id = int(province[0])
         province_name = province[1]
