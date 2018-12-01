@@ -9,6 +9,7 @@ import os
 import gzip
 import requests
 import time
+import ssl
 
 ip_list = []
 
@@ -61,17 +62,18 @@ def load_page(url):
     user_agent = random.choice(ua_list)
     cookie = "_qddaz=QD.qe65no.gjqtrf.jocwoiln; __cfduid=d6b14c69a3ef3670e10335ae439fdaa521541942382; tencentSig=3793054720; 4047_seccode52f9dc26=055GxTiIdf44GhmdjxCHJo7qafosSfKI2pNd4Vpu4oNj85Jx19g; _qdda=3-1.1; _qddamta_4006780020=3-0; 53kf_1827303_keyword=; PHPSESSID=bb8br5gef4ohelodo7msjkqi07; Hm_lvt_4175f2a72ac6f0c111ec482d34734339=1543421255,1543455179,1543499780,1543500345; Hm_lpvt_4175f2a72ac6f0c111ec482d34734339=1543500345; _qddab=3-hg2kfk.jp2o96dj"
     headers = {'Accept': '*/*', 'Accept-Encoding': 'gzip, deflate', "Accept-Language": "zh-CN,zh;q=0.9",
-               "Connection": "keep-alive", "Cookie": cookie, "Host": "www.huawa.com", "Referer": url,
+               "Connection": "close", "Cookie": cookie, "Host": "www.huawa.com", "Referer": url,
                "User_Agent": user_agent, "x-requested-with": "XMLHttpRequest"}
 
     # 随机使用一个代理
-    # proxy_addr = random.choice(ip_list)
-    # print("正在使用代理：%s" % proxy_addr)
-    # proxy = urllib.request.ProxyHandler({'http': proxy_addr})
-    # opener = urllib.request.build_opener(proxy, urllib.request.HTTPHandler)
-    # urllib.request.install_opener(opener)
+    proxy_addr = random.choice(ip_list)
+    print("正在使用代理：%s" % proxy_addr)
+    proxy = urllib.request.ProxyHandler({'http': proxy_addr})
+    opener = urllib.request.build_opener(proxy, urllib.request.HTTPHandler)
+    urllib.request.install_opener(opener)
     req = urllib.request.Request(url, headers=headers)
-    res = urllib.request.urlopen(req)
+    context = ssl._create_unverified_context()
+    res = urllib.request.urlopen(req, context = context)
     rsp_headers = res.info()
     html = res.read()
     ret = ""
@@ -105,8 +107,11 @@ def load_data(province_id, province_name, city_id, city_name, county_id, county_
         html = load_page(url)
         # 解析数据
         page_list = parse_one_page(html)
+        if len([x for x in data_list if x["id"] == page_list[0]["id"]]):
+            break
+
         data_list.extend(page_list)
-        if len(page_list) < 8:
+        if len(page_list) == 0:
             break
         time.sleep(2)
     if len(page_list) > 0:
@@ -117,8 +122,8 @@ def load_data(province_id, province_name, city_id, city_name, county_id, county_
 def parse_one_page(html):
     result_list = []
     pattern = re.compile(
-        '<li>.*?<div class="store_name">.*?<span class="diqu">\[(.*?)\] <b>'
-        '<a href="http://www.huawa.com/shop/(.*?)" target="_blank">(.*?)</a>'
+        '<li>.*?<span class="diqu">\[(.*?)\] <b>'
+        '.*?www.huawa.com/shop/(.*?)" target="_blank">(.*?)</a>'
         '.*?600;">(.*?)</font>.*?花店地址：(.*?)</p>.*?</li>',
         re.S)
     items = re.findall(pattern, html)
@@ -208,7 +213,7 @@ def write_list_to_excel(data_list, province, city, county):
 if __name__ == "__main__":
     get_ip_list()
     area_list = get_huawa_area()
-    # load_data(2, "12", 36, "123", 0, "")
+    # load_data(21, "12", 326, "326", 2226, "")
     for province in area_list[0]:
         province_id = int(province[0])
         province_name = province[1]
