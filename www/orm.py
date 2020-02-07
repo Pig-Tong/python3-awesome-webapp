@@ -142,3 +142,95 @@ class ModelMetaclass(type):
             table_name, ', '.join(map(lambda f: '`%s`=?' % (mappings.get(f).name or f), fields)), primary_key)
         attrs['__delete__'] = 'delete from `%s` where `%s`=?' % (table_name, primary_key)
         return type.__new__(mcs, name, bases, attrs)
+
+
+class Model(dict, metaclass=ModelMetaclass):
+    def __init__(self, **kw):
+        super(Model, self).__init__(**kw)
+
+    def __getattr__(self, item):
+        try:
+            return self[item]
+        except KeyError:
+            raise AttributeError(r"'Model' object has no attribute '%s' " % item)
+
+    def __setattr__(self, key, value):
+        self[key] = value
+
+    def getValue(self, item):
+        return getattr(self, item, None)
+
+    def getValueOrDefault(self, item):
+        value = getattr(self, item, None)
+        if value is None:
+            field = self.__mappings__[item]
+            if field.default is not None:
+                value = field.default if callable(field.default) else field.default
+                logging.debug('using default value for %s: %s' % (item, str(value)))
+                setattr(self, item, value)
+        return value
+
+    @classmethod
+    async def findAll(mcs, where=None, args=None, **kw):
+        # 'find objects by where clause'
+        sql = [mcs.__select__]
+        if where:
+            sql.append('where')
+            sql.append(where)
+        if args is None:
+            args = []
+        order_by = kw.get('orderBy', None)
+        if order_by:
+            sql.append('order by')
+            sql.append(order_by)
+        limit = kw.get('limit', None)
+        if limit is not None:
+            sql.append('limit')
+            if isinstance(limit, int):
+                sql.append('?')
+                sql.append(limit)
+            elif isinstance(limit, tuple) and len(limit) == 2:
+                sql.append('?,?')
+                args.extend(limit)
+            else:
+                raise ValueError('Invalid limit value:%s' % str(limit))
+        rs = await select(' '.join(sql), args)
+        return [mcs(**r) for r in rs]
+
+    @classmethod
+    async def findNumber(cls, selectField, where=None, args=None):
+        sql = ['select %s _num_ from `%s`' % (selectField, cls.__table__)]
+        if where:
+            sql.append('where')
+            sql.append(where)
+        rs = await select(' '.join(sql), args, 1)
+        if len(rs) == 0:
+            return None
+        return rs[0]['_num_']
+
+    @classmethod
+    async def find(cls, pk):
+        rs = await select('%s where `%s`=?' % (cls.__select__, cls.__primary_key__), [pk], 1)
+        if len(rs) == 0:
+            return None
+        return cls(**rs[0])
+
+    async def save(self):
+        args = list(map(self.getValueOrDefault, self.__fields__))
+        args.append(self.getValueOrDefault(self.__primary_key__))
+        rows = await execute(self.__insert__, args)
+        if rows != 1:
+            logging.warn('failed to insert record: affected rows: %s' % rows)
+
+    async def update(self):
+        args = list(map(self.getValue, self.__fields__))
+        args.append(self.getValue(self.__primary_key__))
+        rows = await execute(self.__update__, args)
+        if rows != 1:
+            logging.warn('failed to update by primary key: affected rows: %s' % rows)
+
+    async def remove(self):
+        args = [self.getValue(self.__primary_key__)]
+        rows = await execute(self.__delete__, args)
+        if rows != 1:
+            logging.warn('failed to remove by primary key: affected rows: %s' % rows)
