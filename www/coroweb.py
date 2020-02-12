@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+__author__ = 'Pig·Tong'
+
 import asyncio
 import inspect
 import logging
@@ -7,17 +9,15 @@ from urllib import parse
 
 from aiohttp import web
 
-from www.apis import APIError
-
-__author__ = 'Pig·Tong'
+from apis import APIError
 
 import functools
 
 
 def get(path):
-    """
-        Define decorator @get('/path')
-    """
+    '''
+    Define decorator @get('/path')
+    '''
 
     def decorator(func):
         @functools.wraps(func)
@@ -32,9 +32,9 @@ def get(path):
 
 
 def post(path):
-    """
-        Define decorator @post('/path')
-    """
+    '''
+    Define decorator @post('/path')
+    '''
 
     def decorator(func):
         @functools.wraps(func)
@@ -63,7 +63,7 @@ def get_named_kw_args(fn):
     for name, param in params.items():
         if param.kind == inspect.Parameter.KEYWORD_ONLY:
             args.append(name)
-    return tuple(params)
+    return tuple(args)
 
 
 def has_named_kw_args(fn):
@@ -89,14 +89,14 @@ def has_request_arg(fn):
             found = True
             continue
         if found and (
-                param.kind != inspect.Parameter.VAR_POSITIONAL and param.kind != inspect.Parameter.KEYWORD_ONLY
-                and param.kind != inspect.Parameter.VAR_KEYWORD):
+                param.kind != inspect.Parameter.VAR_POSITIONAL and param.kind != inspect.Parameter.KEYWORD_ONLY and param.kind != inspect.Parameter.VAR_KEYWORD):
             raise ValueError(
                 'request parameter must be the last named parameter in function: %s%s' % (fn.__name__, str(sig)))
-        return found
+    return found
 
 
 class RequestHandler(object):
+
     def __init__(self, app, fn):
         self._app = app
         self._func = fn
@@ -113,12 +113,12 @@ class RequestHandler(object):
                 if not request.content_type:
                     return web.HTTPBadRequest('Missing Content-Type.')
                 ct = request.content_type.lower()
-                if ct.startwith('application/json'):
+                if ct.startswith('application/json'):
                     params = await request.json()
                     if not isinstance(params, dict):
                         return web.HTTPBadRequest('JSON body must be object.')
                     kw = params
-                elif ct.startwith('application/x-www-form-urlencoded') or ct.startwith('multipart/form-data'):
+                elif ct.startswith('application/x-www-form-urlencoded') or ct.startswith('multipart/form-data'):
                     params = await request.post()
                     kw = dict(**params)
                 else:
@@ -139,14 +139,14 @@ class RequestHandler(object):
                     if name in kw:
                         copy[name] = kw[name]
                 kw = copy
-            # check named arg
+            # check named arg:
             for k, v in request.match_info.items():
                 if k in kw:
                     logging.warning('Duplicate arg name in named arg and kw args: %s' % k)
                 kw[k] = v
         if self._has_request_arg:
             kw['request'] = request
-        # check required kw
+        # check required kw:
         if self._required_kw_args:
             for name in self._required_kw_args:
                 if not name in kw:
@@ -162,18 +162,18 @@ class RequestHandler(object):
 def add_static(app):
     path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
     app.router.add_static('/static/', path)
-    logging.info('add static %s ==> %s' % ('/static/', path))
+    logging.info('add static %s => %s' % ('/static/', path))
 
 
 def add_route(app, fn):
     method = getattr(fn, '__method__', None)
     path = getattr(fn, '__route__', None)
     if path is None or method is None:
-        raise ValueError('@get or @post not defined in %s' % str(fn))
+        raise ValueError('@get or @post not defined in %s.' % str(fn))
     if not asyncio.iscoroutinefunction(fn) and not inspect.isgeneratorfunction(fn):
         fn = asyncio.coroutine(fn)
     logging.info(
-        'add route %s %s ==> %s(%s)' % (method, path, fn.__name__, ','.join(inspect.signature(fn).parameters.keys())))
+        'add route %s %s => %s(%s)' % (method, path, fn.__name__, ', '.join(inspect.signature(fn).parameters.keys())))
     app.router.add_route(method, path, RequestHandler(app, fn))
 
 

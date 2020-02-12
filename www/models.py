@@ -4,7 +4,7 @@ __author__ = 'Pig·Tong'
 import uuid
 import time
 
-from www.orm import Model, StringField, BooleanField, FloatField, TextField
+from orm import Model, StringField, BooleanField, FloatField, TextField
 
 
 def next_id():

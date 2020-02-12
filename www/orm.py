@@ -15,12 +15,12 @@ async def create_pool(loop, **kw):
     logging.info("create database connection pool...")
     global __pool
     __pool = await aiomysql.create_pool(
-        host=kw.get('host', '39.100.23.3'),
+        host=kw['host'],
         port=kw.get('port', 3306),
         user=kw['user'],
         password=kw['password'],
         db=kw['db'],
-        charset=kw.get('charset', 'utf-8'),
+        charset=kw.get('charset', 'utf8'),
         autocommit=kw.get('autocommit', True),
         maxsize=kw.get('maxsize', 10),
         minsize=kw.get('minsize', 1),
@@ -109,41 +109,39 @@ class TextField(Field):
 
 class ModelMetaclass(type):
     def __new__(mcs, name, bases, attrs):
-        # 排除Model类本身
         if name == 'Model':
             return type.__new__(mcs, name, bases, attrs)
-        # 获取table名称
-        table_name = attrs.get('__table__', None) or name
-        logging.info('found model:%s (table:%s)' % (name, table_name))
-        # 获取所有的Field和主键名:
+        tableName = attrs.get('__table__', None) or name
+        logging.info('found model: %s (table: %s)' % (name, tableName))
         mappings = dict()
         fields = []
-        primary_key = None
+        primaryKey = None
         for k, v in attrs.items():
             if isinstance(v, Field):
-                logging.info('found mapping : %s ==> %s' % (k, v))
+                logging.info('  found mapping: %s ==> %s' % (k, v))
                 mappings[k] = v
                 if v.primary_key:
-                    # 找到主键
-                    if primary_key:
-                        raise RuntimeError('Duplicate primary key for field: %s' % k)
+                    # 找到主键:
+                    if primaryKey:
+                        raise StandardError('Duplicate primary key for field: %s' % k)
+                    primaryKey = k
                 else:
                     fields.append(k)
-        if not primary_key:
-            raise RuntimeError('Primary key not found.')
+        if not primaryKey:
+            raise StandardError('Primary key not found.')
         for k in mappings.keys():
             attrs.pop(k)
         escaped_fields = list(map(lambda f: '`%s`' % f, fields))
-        attrs['__mapping__'] = mappings  # 保存属性和列的映射关系
-        attrs['__table__'] = table_name
-        attrs['__primary_key__'] = primary_key
-        attrs['__fields__'] = fields
-        attrs['__select__'] = 'select `%s`,%s from `%s`' % (primary_key, ', '.join(escaped_fields), table_name)
+        attrs['__mappings__'] = mappings  # 保存属性和列的映射关系
+        attrs['__table__'] = tableName
+        attrs['__primary_key__'] = primaryKey  # 主键属性名
+        attrs['__fields__'] = fields  # 除主键外的属性名
+        attrs['__select__'] = 'select `%s`, %s from `%s`' % (primaryKey, ', '.join(escaped_fields), tableName)
         attrs['__insert__'] = 'insert into `%s` (%s, `%s`) values (%s)' % (
-            table_name, ', '.join(escaped_fields), primary_key, create_args_string(len(escaped_fields) + 1))
+        tableName, ', '.join(escaped_fields), primaryKey, create_args_string(len(escaped_fields) + 1))
         attrs['__update__'] = 'update `%s` set %s where `%s`=?' % (
-            table_name, ', '.join(map(lambda f: '`%s`=?' % (mappings.get(f).name or f), fields)), primary_key)
-        attrs['__delete__'] = 'delete from `%s` where `%s`=?' % (table_name, primary_key)
+        tableName, ', '.join(map(lambda f: '`%s`=?' % (mappings.get(f).name or f), fields)), primaryKey)
+        attrs['__delete__'] = 'delete from `%s` where `%s`=?' % (tableName, primaryKey)
         return type.__new__(mcs, name, bases, attrs)
 
 
@@ -174,9 +172,9 @@ class Model(dict, metaclass=ModelMetaclass):
         return value
 
     @classmethod
-    async def findAll(mcs, where=None, args=None, **kw):
+    async def findAll(cls, where=None, args=None, **kw):
         # 'find objects by where clause'
-        sql = [mcs.__select__]
+        sql = [cls.__select__]
         if where:
             sql.append('where')
             sql.append(where)
@@ -198,7 +196,7 @@ class Model(dict, metaclass=ModelMetaclass):
             else:
                 raise ValueError('Invalid limit value:%s' % str(limit))
         rs = await select(' '.join(sql), args)
-        return [mcs(**r) for r in rs]
+        return [cls(**r) for r in rs]
 
     @classmethod
     async def findNumber(cls, selectField, where=None, args=None):
